@@ -5,6 +5,8 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -26,9 +28,12 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+
+import au.com.bytecode.opencsv.CSVWriter;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
     DAL dal;
     Dialog dialog,dialogBackup;
     EditText editTextCity,editTextProvince,tempEditTextCity,tempEditTextProvince;
-    Button buttonAdd,buttonShow,updateCountry,buttonExport,buttonImport,buttonOK,buttonCancel;
+    Button buttonAdd,buttonShow,updateCountry,buttonExport,buttonImport,buttonOK,buttonCancel,buttonXLS;
     ListView listView;
     ArrayList<DataBean> myarrayList;
     ArrayList<String> tempList;
@@ -117,6 +122,41 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        buttonXLS.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String path=getDatabasePath(DBConnect.DB_NAME).getPath();
+                File dbFile= new File(path);
+                DBConnect dbhelper = new DBConnect(getApplicationContext());
+                File exportDir = new File(Environment.getExternalStorageDirectory(), "");
+                if (!exportDir.exists())
+                {
+                    exportDir.mkdirs();
+                }
+
+                File file = new File(exportDir, "csvname.csv");
+                try
+                {
+                    file.createNewFile();
+                    CSVWriter csvWrite = new CSVWriter(new FileWriter(file));
+                    SQLiteDatabase db = dbhelper.getReadableDatabase();
+                    Cursor curCSV = db.rawQuery("SELECT * FROM country",null);
+                    csvWrite.writeNext(curCSV.getColumnNames());
+                    while(curCSV.moveToNext())
+                    {
+                        //Which column you want to exprort
+                        String arrStr[] ={curCSV.getString(1),curCSV.getString(2)};
+                        csvWrite.writeNext(arrStr);
+                    }
+                    csvWrite.close();
+                    curCSV.close();
+                }
+                catch(Exception sqlEx)
+                {
+                    Log.e("MainActivity", sqlEx.getMessage(), sqlEx);
+                }
+            }
+        });
     }
 
     private void initDialog() {
@@ -135,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
         buttonShow = (Button) findViewById(R.id.mybutton_show);
         buttonExport= (Button) findViewById(R.id.mybutton_export);
         buttonImport= (Button) findViewById(R.id.mybutton_import);
+        buttonXLS= (Button) findViewById(R.id.mybutton_xls);
         listView = (ListView) findViewById(R.id.mylistView);
         dal = new DAL(this);
         textViewPath= (TextView) findViewById(R.id.textViewPath);
