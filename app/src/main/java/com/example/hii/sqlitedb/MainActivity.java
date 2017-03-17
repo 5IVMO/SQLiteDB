@@ -23,25 +23,20 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int PICKFILE_RESULT_CODE = 1;
     DAL dal;
-    Dialog dialog,dialogExport;
+    Dialog dialog,dialogBackup;
     EditText editTextCity,editTextProvince,tempEditTextCity,tempEditTextProvince;
-    Button buttonAdd,buttonShow,updateCountry,buttonExport,buttonImport,buttonExport1,buttonCancel;
+    Button buttonAdd,buttonShow,updateCountry,buttonExport,buttonImport,buttonOK,buttonCancel;
     ListView listView;
     ArrayList<DataBean> myarrayList;
     ArrayList<String> tempList;
@@ -77,18 +72,13 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 try {
                    // backupDatabase();
-                    dialogExport = new Dialog(MainActivity.this);
-                    dialogExport.setContentView(R.layout.dialog_export_db);
-                    dialogExport.show();
-
-                    radioGroup= (RadioGroup) dialogExport.findViewById(R.id.radioGroup);
-                    buttonExport1= (Button) dialogExport.findViewById(R.id.mybutton_export1);
-                    buttonCancel= (Button) dialogExport.findViewById(R.id.mybutton_cancel);
-                    buttonExport1.setOnClickListener(new View.OnClickListener() {
+                    initDialog();
+                    dialogBackup.setTitle("Export Database");
+                    buttonOK.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             int selectedId = radioGroup.getCheckedRadioButtonId();
-                            radioButton = (RadioButton) dialogExport.findViewById(selectedId);
+                            radioButton = (RadioButton) dialogBackup.findViewById(selectedId);
                             try {
                                 String destPath=DBBackUp.exportDB(getDatabasePath((String) radioButton.getText()).getPath());
                                 textViewPath.setText(destPath);
@@ -98,13 +88,13 @@ public class MainActivity extends AppCompatActivity {
                             }
                             Toast.makeText(MainActivity.this,
                                     radioButton.getText(), Toast.LENGTH_SHORT).show();
-                            dialogExport.dismiss();
+                            dialogBackup.dismiss();
                         }
                     });
                    buttonCancel.setOnClickListener(new View.OnClickListener() {
                        @Override
                        public void onClick(View v) {
-                           dialogExport.dismiss();
+                           dialogBackup.dismiss();
                        }
                    });
                 }
@@ -127,6 +117,15 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void initDialog() {
+        dialogBackup = new Dialog(MainActivity.this);
+        dialogBackup.setContentView(R.layout.dialog_backup_db);
+        dialogBackup.show();
+        radioGroup= (RadioGroup) dialogBackup.findViewById(R.id.radioGroup);
+        buttonOK= (Button) dialogBackup.findViewById(R.id.mybutton_backup);
+        buttonCancel= (Button) dialogBackup.findViewById(R.id.mybutton_cancel);
     }
 
     private void initView() {
@@ -255,23 +254,35 @@ public class MainActivity extends AppCompatActivity {
                 if (resultCode == RESULT_OK) {
                     //FilePath is your file as a string
                     final String FilePath = data.getData().getPath();
-                    final String DBPath=getDatabasePath(DBConnect.DB_NAME).getPath();
-                    String extension= FilePath.substring(FilePath.lastIndexOf("."));
+                    String extension="";
+                   // final String DBPath=getDatabasePath(DBConnect.DB_NAME).getPath();
+                    if(FilePath.contains(".")){
+                        extension= FilePath.substring(FilePath.lastIndexOf("."));
+                    }
 
                     if(!TextUtils.isEmpty(extension) && extension.equals(".db")){
                         Util.ToastShort(MainActivity.this,"DB file");
-                        AlertDialog.Builder builder1 = new AlertDialog.Builder(MainActivity.this);
-                        builder1.setTitle("Remove Old Database");
-                        builder1.setIcon(R.drawable.ic_warning_black_24dp);
-                        builder1.setMessage("Are you Sure You want to remove old Database ?");
-                        builder1.setCancelable(true);
+                        initDialog();
+                        dialogBackup.setTitle("Import Database");
+                        buttonOK.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                int selectedId = radioGroup.getCheckedRadioButtonId();
+                                radioButton = (RadioButton) dialogBackup.findViewById(selectedId);
 
-                        builder1.setPositiveButton(
-                                "Yes",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog, int id) {
-                                        try {
-                                            DBBackUp.importDB(FilePath,DBPath);
+                                AlertDialog.Builder builder1 = new AlertDialog.Builder(MainActivity.this);
+                                builder1.setTitle("Remove Old Database");
+                                builder1.setIcon(R.drawable.ic_warning_black_24dp);
+                                builder1.setMessage("Are you Sure You want to remove old Database ?");
+                                builder1.setCancelable(true);
+
+                                builder1.setPositiveButton(
+                                        "Yes",
+                                        new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                try {
+                                                    String DBPath=getDatabasePath((String) radioButton.getText()).getPath();
+                                                    DBBackUp.importDB(FilePath,DBPath);
 //                                        InputStream mInput = new FileInputStream(FilePath);
 //                                        String outFileName = getDatabasePath(DBConnect.DB_NAME).getPath();;
 //                                        OutputStream mOutput = new FileOutputStream(outFileName);
@@ -285,23 +296,36 @@ public class MainActivity extends AppCompatActivity {
 //                                        mOutput.close();
 //                                        mInput.close();
 
-                                        } catch (Exception e) {
-                                            Util.ToastLong(MainActivity.this,e.toString());
-                                        }
-                                        dialog.cancel();
-                                    }
-                                });
+                                                } catch (Exception e) {
+                                                    Util.ToastLong(MainActivity.this,e.toString());
+                                                }
+                                                dialog.cancel();
+                                            }
+                                        });
 
-                        builder1.setNegativeButton(
-                                "No",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog, int id) {
-                                        dialog.cancel();
-                                    }
-                                });
+                                builder1.setNegativeButton(
+                                        "No",
+                                        new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                dialog.cancel();
+                                            }
+                                        });
 
-                        AlertDialog alert11 = builder1.create();
-                        alert11.show();
+                                AlertDialog alert11 = builder1.create();
+                                alert11.show();
+                                
+                                Toast.makeText(MainActivity.this,
+                                        radioButton.getText(), Toast.LENGTH_SHORT).show();
+                                dialogBackup.dismiss();
+                            }
+                        });
+                        buttonCancel.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                dialogBackup.dismiss();
+                            }
+                        });
+                    
                     }
                     else {
                         Util.ToastLong(MainActivity.this,"Please select .db file");

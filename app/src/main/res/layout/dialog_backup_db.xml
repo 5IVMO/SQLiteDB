@@ -37,8 +37,8 @@
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Export"
-            android:id="@+id/mybutton_export1"
+            android:text="OK"
+            android:id="@+id/mybutton_backup"
             android:background="@color/colorPrimary"
             android:textColor="#FFFFFF"
             android:layout_margin="10dp"/>
